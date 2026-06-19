@@ -957,7 +957,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     }
 
     PasteAfterDelay(ToNSString(selected->appleId), 3.0, false);
-    [MakeAlert(@"准备自动填充", @"请在 3 秒内切换到目标输入框，随后会自动执行粘贴。", NSAlertStyleInformational) runModal];
+    self.statusLabel.stringValue = @"请在 3 秒内切换到目标输入框，随后会自动执行 Apple ID 粘贴。";
 }
 
 - (void)autoPastePassword:(id)sender {
@@ -978,7 +978,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     }
 
     TypeAfterDelay(ToNSString(*password), 3.0);
-    [MakeAlert(@"准备自动填充", @"请在 3 秒内切换到目标密码输入框，随后会自动逐字输入密码。", NSAlertStyleInformational) runModal];
+    self.statusLabel.stringValue = @"请在 3 秒内切换到目标密码输入框，随后会自动逐字输入密码。";
 }
 
 - (void)loginToICloud:(id)sender {
@@ -994,11 +994,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 
     OpenICloudSettings();
     PasteAfterDelay(ToNSString(selected->appleId), 3.0, false);
-    [MakeAlert(
-        @"iCloud 辅助登录",
-        @"已尝试打开 iCloud 设置。3 秒后会自动填入 Apple ID。若系统要求退出当前账号，请你手动确认；进入密码框后可再点“复制密码”或使用自动输入密码。",
-        NSAlertStyleInformational
-    ) runModal];
+    self.statusLabel.stringValue = @"已尝试打开 iCloud 设置。3 秒后自动填入 Apple ID；如需密码，请切到密码框后再点自动输入密码。";
 }
 
 - (void)loginToAppStore:(id)sender {
@@ -1014,11 +1010,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 
     OpenAppStoreSettings();
     PasteAfterDelay(ToNSString(selected->appleId), 3.0, false);
-    [MakeAlert(
-        @"App Store 辅助登录",
-        @"已尝试打开 App Store。3 秒后会自动填入 Apple ID。若当前已有账号，退出和确认步骤仍需你手动完成；进入密码框后可再点“复制密码”或使用自动输入密码。",
-        NSAlertStyleInformational
-    ) runModal];
+    self.statusLabel.stringValue = @"已尝试打开 App Store。3 秒后自动填入 Apple ID；如需密码，请切到密码框后再点自动输入密码。";
 }
 
 - (void)showGuide:(id)sender {
