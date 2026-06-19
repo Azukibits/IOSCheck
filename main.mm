@@ -345,6 +345,39 @@ static void OpenAppStoreSettings() {
     OpenURLString(@"macappstore://");
 }
 
+static NSString* EscapeSingleQuotes(NSString* input) {
+    return [input stringByReplacingOccurrencesOfString:@"'" withString:@"'\\''"];
+}
+
+static NSString* MountedIOSCheckVolumePath() {
+    NSArray<NSURL*>* mounted = [[NSFileManager defaultManager] mountedVolumeURLsIncludingResourceValuesForKeys:nil options:0];
+    for (NSURL* url in mounted.reverseObjectEnumerator) {
+        NSString* path = url.path;
+        NSString* candidate = [path stringByAppendingPathComponent:@"IOSCheck.app"];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:candidate]) {
+            return path;
+        }
+    }
+    return nil;
+}
+
+static NSString* LaunchInstalledCommand() {
+    return @"xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app";
+}
+
+static NSString* InstallAndLaunchCommand() {
+    NSString* volumePath = MountedIOSCheckVolumePath();
+    if (volumePath == nil) {
+        volumePath = @"/Volumes/IOSCheck";
+    }
+
+    NSString* escapedVolume = EscapeSingleQuotes(volumePath);
+    return [NSString stringWithFormat:
+        @"cp -R '%@/IOSCheck.app' /Applications/ && xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app",
+        escapedVolume
+    ];
+}
+
 static NSAlert* MakeAlert(NSString* title, NSString* info, NSAlertStyle style) {
     NSAlert* alert = [[NSAlert alloc] init];
     alert.messageText = title;
@@ -498,6 +531,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 @property(nonatomic, strong) NSTextField* statusLabel;
 @property(nonatomic, strong) NSButton* loginICloudButton;
 @property(nonatomic, strong) NSButton* loginAppStoreButton;
+@property(nonatomic, strong) NSButton* launchCommandButton;
 @end
 
 @implementation AppController
@@ -596,7 +630,14 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     self.loginAppStoreButton.enabled = NO;
     [content addSubview:self.loginAppStoreButton];
 
-    self.statusLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 92, 740, 18)];
+    self.launchCommandButton = [[NSButton alloc] initWithFrame:NSMakeRect(378, 68, 364, 30)];
+    self.launchCommandButton.title = @"复制启动命令";
+    self.launchCommandButton.bezelStyle = NSBezelStyleRounded;
+    self.launchCommandButton.target = self;
+    self.launchCommandButton.action = @selector(copyLaunchCommand:);
+    [content addSubview:self.launchCommandButton];
+
+    self.statusLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 40, 740, 18)];
     self.statusLabel.bezeled = NO;
     self.statusLabel.drawsBackground = NO;
     self.statusLabel.editable = NO;
@@ -784,6 +825,22 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 
     CopySensitiveToPasteboard(ToNSString(*password));
     [MakeAlert(@"已复制", @"密码已复制到剪贴板，将在 60 秒后自动清空。", NSAlertStyleInformational) runModal];
+}
+
+- (void)copyLaunchCommand:(id)sender {
+    NSString* command;
+    NSString* message;
+
+    if ([[NSFileManager defaultManager] fileExistsAtPath:@"/Applications/IOSCheck.app"]) {
+        command = LaunchInstalledCommand();
+        message = @"已复制 Applications 版本的启动命令。";
+    } else {
+        command = InstallAndLaunchCommand();
+        message = @"已复制从当前挂载卷安装并启动的命令。";
+    }
+
+    CopyToPasteboard(command);
+    [MakeAlert(@"已复制", message, NSAlertStyleInformational) runModal];
 }
 
 - (BOOL)prepareForAutoPasteWithSensitive:(BOOL)sensitive {
