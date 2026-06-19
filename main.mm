@@ -222,6 +222,28 @@ static bool DeletePassword(const std::string& alias) {
     return status == errSecSuccess || status == errSecItemNotFound;
 }
 
+static bool DeleteAllPasswords(const std::vector<AccountRecord>& accounts) {
+    bool allSucceeded = true;
+    for (const auto& account : accounts) {
+        if (!DeletePassword(account.alias)) {
+            allSucceeded = false;
+        }
+    }
+    return allSucceeded;
+}
+
+static bool ClearLocalAccounts(std::string* errorMessage) {
+    std::error_code ec;
+    fs::remove(ConfigPath(), ec);
+    if (ec) {
+        if (errorMessage != nullptr) {
+            *errorMessage = "无法删除配置文件: " + ConfigPath().string();
+        }
+        return false;
+    }
+    return true;
+}
+
 static void CopyToPasteboard(NSString* text) {
     NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
     [pasteboard clearContents];
@@ -653,7 +675,9 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
         @{@"title": @"复制 Apple ID", @"selector": NSStringFromSelector(@selector(copyAppleId:)), @"x": @260, @"y": @18, @"w": @116},
         @{@"title": @"复制密码", @"selector": NSStringFromSelector(@selector(copyPassword:)), @"x": @384, @"y": @18, @"w": @96},
         @{@"title": @"显示指引", @"selector": NSStringFromSelector(@selector(showGuide:)), @"x": @488, @"y": @18, @"w": @86},
-        @{@"title": @"自动填 Apple ID", @"selector": NSStringFromSelector(@selector(autoPasteAppleId:)), @"x": @582, @"y": @18, @"w": @154}
+        @{@"title": @"自动填 Apple ID", @"selector": NSStringFromSelector(@selector(autoPasteAppleId:)), @"x": @582, @"y": @18, @"w": @154},
+        @{@"title": @"清空本地账号", @"selector": NSStringFromSelector(@selector(clearLocalAccountsAction:)), @"x": @20, @"y": @58, @"w": @120},
+        @{@"title": @"清空钥匙串密码", @"selector": NSStringFromSelector(@selector(clearKeychainPasswordsAction:)), @"x": @148, @"y": @58, @"w": @138}
     ];
 
     for (NSDictionary* config in buttons) {
@@ -841,6 +865,51 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 
     CopyToPasteboard(command);
     [MakeAlert(@"已复制", message, NSAlertStyleInformational) runModal];
+}
+
+- (void)clearLocalAccountsAction:(id)sender {
+    NSAlert* confirm = MakeAlert(@"清空本地账号", @"将删除本机保存的账号列表，但不会删除钥匙串密码。是否继续？", NSAlertStyleWarning);
+    [confirm addButtonWithTitle:@"清空"];
+    [confirm addButtonWithTitle:@"取消"];
+    if ([confirm runModal] != NSAlertFirstButtonReturn) {
+        return;
+    }
+
+    std::string error;
+    if (!ClearLocalAccounts(&error)) {
+        [MakeAlert(@"清空失败", ToNSString(error), NSAlertStyleCritical) runModal];
+        return;
+    }
+
+    [self loadAccounts];
+    [self.tableView reloadData];
+    self.detailLabel.stringValue = @"本地账号列表已清空。";
+    self.statusLabel.stringValue = @"本地账号列表已清空，钥匙串密码未删除。";
+    self.loginICloudButton.enabled = NO;
+    self.loginAppStoreButton.enabled = NO;
+}
+
+- (void)clearKeychainPasswordsAction:(id)sender {
+    const auto accounts = LoadAccounts();
+    if (accounts.empty()) {
+        [MakeAlert(@"没有可清理的数据", @"当前账号列表为空。若你曾手动改过数据，可在“钥匙串访问”中搜索 IOSCheck.AppleAccount 进一步检查。", NSAlertStyleInformational) runModal];
+        return;
+    }
+
+    NSAlert* confirm = MakeAlert(@"清空钥匙串密码", @"将删除当前账号列表对应的所有钥匙串密码。是否继续？", NSAlertStyleWarning);
+    [confirm addButtonWithTitle:@"清空"];
+    [confirm addButtonWithTitle:@"取消"];
+    if ([confirm runModal] != NSAlertFirstButtonReturn) {
+        return;
+    }
+
+    if (!DeleteAllPasswords(accounts)) {
+        [MakeAlert(@"部分删除失败", @"有些钥匙串条目未能删除，请在“钥匙串访问”中搜索 IOSCheck.AppleAccount 手动检查。", NSAlertStyleWarning) runModal];
+        return;
+    }
+
+    self.statusLabel.stringValue = @"当前账号列表对应的钥匙串密码已清空。";
+    [MakeAlert(@"已清空", @"当前账号列表对应的钥匙串密码已删除。", NSAlertStyleInformational) runModal];
 }
 
 - (BOOL)prepareForAutoPasteWithSensitive:(BOOL)sensitive {
