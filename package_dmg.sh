@@ -6,6 +6,7 @@ BUILD_DIR="$ROOT_DIR/build"
 APP_PATH="$BUILD_DIR/IOSCheck.app"
 DIST_DIR="$ROOT_DIR/dist"
 DMG_PATH="$DIST_DIR/IOSCheck-macOS.dmg"
+STAGING_DIR="$DIST_DIR/dmg-staging"
 CMAKE_BIN="/Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake"
 
 if [[ ! -x "$CMAKE_BIN" ]]; then
@@ -23,12 +24,19 @@ fi
 
 mkdir -p "$DIST_DIR"
 rm -f "$DMG_PATH"
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
+
+cp -R "$APP_PATH" "$STAGING_DIR/"
+ln -s /Applications "$STAGING_DIR/Applications"
 
 hdiutil create \
   -volname "IOSCheck" \
-  -srcfolder "$APP_PATH" \
+  -srcfolder "$STAGING_DIR" \
   -ov \
   -format UDZO \
   "$DMG_PATH"
+
+rm -rf "$STAGING_DIR"
 
 echo "Created: $DMG_PATH"
