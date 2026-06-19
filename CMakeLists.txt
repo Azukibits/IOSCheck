@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/AppIcon.png)
+
 add_executable(IOSCheck MACOSX_BUNDLE main.mm)
 
 target_compile_features(IOSCheck PRIVATE cxx_std_20)
@@ -13,6 +15,11 @@ target_link_libraries(IOSCheck
     "-framework AppKit"
     "-framework Security"
 )
+
+set_source_files_properties(${APP_ICON} PROPERTIES
+    MACOSX_PACKAGE_LOCATION Resources
+)
+target_sources(IOSCheck PRIVATE ${APP_ICON})
 
 set_target_properties(IOSCheck PROPERTIES
     MACOSX_BUNDLE_BUNDLE_NAME "IOSCheck"

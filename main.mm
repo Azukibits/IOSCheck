@@ -856,6 +856,13 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
         NSApplication* app = [NSApplication sharedApplication];
+        NSString* iconPath = [NSBundle.mainBundle pathForResource:@"AppIcon" ofType:@"png"];
+        if (iconPath != nil) {
+            NSImage* icon = [[NSImage alloc] initWithContentsOfFile:iconPath];
+            if (icon != nil) {
+                [app setApplicationIconImage:icon];
+            }
+        }
         AppController* controller = [[AppController alloc] init];
         app.delegate = controller;
         [app setActivationPolicy:NSApplicationActivationPolicyRegular];
