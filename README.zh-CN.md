@@ -77,6 +77,20 @@ cmake --build build
 build/IOSCheck.app
 ```
 
+## 首次打开说明
+
+当前发布版本还没有 Apple Developer 签名和公证。
+
+如果你从 GitHub 下载后看到“已损坏”或“无法验证开发者”，这通常是 `macOS Gatekeeper` 拦截了未签名应用，不是包体本身坏了。
+
+可用方式：
+
+1. 打开 `.dmg`
+2. 把 `IOSCheck.app` 拖到 `Applications`
+3. 双击 `Open IOSCheck.command`
+
+这个脚本会尝试移除隔离标记并启动应用。
+
 ## 技术栈
 
 - `Objective-C++`

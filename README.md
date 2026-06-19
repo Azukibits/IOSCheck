@@ -73,6 +73,20 @@ Output:
 build/IOSCheck.app
 ```
 
+## First Launch
+
+The current public build is not yet signed and notarized with an Apple Developer certificate.
+
+If macOS shows "damaged" or "cannot verify developer" after downloading from GitHub, that is usually `Gatekeeper` blocking an unsigned app rather than a broken bundle.
+
+Workaround:
+
+1. Open the `.dmg`
+2. Drag `IOSCheck.app` into `Applications`
+3. Run `Open IOSCheck.command`
+
+That helper script attempts to remove the quarantine flag and launch the app.
+
 ## Tech Stack
 
 - `Objective-C++`
