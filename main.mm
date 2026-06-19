@@ -330,6 +330,21 @@ static void TypeAfterDelay(NSString* text, NSTimeInterval delaySeconds) {
     );
 }
 
+static void OpenURLString(NSString* urlString) {
+    NSURL* url = [NSURL URLWithString:urlString];
+    if (url != nil) {
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
+}
+
+static void OpenICloudSettings() {
+    OpenURLString(@"x-apple.systempreferences:com.apple.preferences.AppleIDPrefPane");
+}
+
+static void OpenAppStoreSettings() {
+    OpenURLString(@"macappstore://");
+}
+
 static NSAlert* MakeAlert(NSString* title, NSString* info, NSAlertStyle style) {
     NSAlert* alert = [[NSAlert alloc] init];
     alert.messageText = title;
@@ -346,17 +361,18 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     builder
         << "\n安全边界:\n"
         << "1. 本工具只管理本地资料和钥匙串密码。\n"
-        << "2. 无法直接切换 iPhone 或 iPad 的 iCloud / App Store 账号。\n"
-        << "3. 最终登录动作必须在苹果系统设置中完成。\n"
+        << "2. 无法自动退出当前 iCloud 或 App Store 账号。\n"
+        << "3. 无法直接接管苹果受保护的系统登录流程。\n"
         << "\n建议步骤:\n"
-        << "1. 在目标设备打开设置。\n"
-        << "2. 如有需要，退出当前 iCloud 或 App Store 账号。\n"
-        << "3. 使用上面的 Apple ID 登录。\n";
+        << "1. 点击下方“登录到 iCloud”或“登录到 App Store”。\n"
+        << "2. 程序会打开对应位置，并辅助填入账号。\n"
+        << "3. 如有需要，请你自己确认退出当前账号。\n"
+        << "4. 再由你完成最终登录确认。\n";
 
     if (password.has_value()) {
-        builder << "4. 需要密码时请点击“复制密码”，剪贴板会在 60 秒后自动清空。\n";
+        builder << "5. 密码可通过自动输入或复制方式补全。\n";
     } else {
-        builder << "4. 未在钥匙串中找到对应密码。\n";
+        builder << "5. 未在钥匙串中找到对应密码。\n";
     }
 
     return ToNSString(builder.str());
@@ -480,6 +496,8 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 @property(nonatomic, strong) NSMutableArray<NSDictionary*>* accounts;
 @property(nonatomic, strong) AccountEditorController* editor;
 @property(nonatomic, strong) NSTextField* statusLabel;
+@property(nonatomic, strong) NSButton* loginICloudButton;
+@property(nonatomic, strong) NSButton* loginAppStoreButton;
 @end
 
 @implementation AppController
@@ -496,7 +514,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 }
 
 - (void)buildWindow {
-    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 760, 430)
+    self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 780, 460)
                                               styleMask:(NSWindowStyleMaskTitled |
                                                          NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskMiniaturizable |
@@ -504,12 +522,12 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
     self.window.title = @"IOSCheck";
-    self.window.minSize = NSMakeSize(720, 410);
+    self.window.minSize = NSMakeSize(760, 440);
     [self.window center];
 
     NSView* content = self.window.contentView;
 
-    NSTextField* title = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 384, 280, 28)];
+    NSTextField* title = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 414, 280, 28)];
     title.bezeled = NO;
     title.drawsBackground = NO;
     title.editable = NO;
@@ -518,7 +536,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     title.stringValue = @"Apple 账号切换助手";
     [content addSubview:title];
 
-    NSTextField* subtitle = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 360, 520, 18)];
+    NSTextField* subtitle = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 390, 620, 18)];
     subtitle.bezeled = NO;
     subtitle.drawsBackground = NO;
     subtitle.editable = NO;
@@ -527,7 +545,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     subtitle.stringValue = @"账号信息保存在本地文件，密码仅保存在 macOS 钥匙串。";
     [content addSubview:subtitle];
 
-    NSScrollView* scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(20, 90, 320, 240)];
+    NSScrollView* scrollView = [[NSScrollView alloc] initWithFrame:NSMakeRect(20, 132, 320, 240)];
     scrollView.hasVerticalScroller = YES;
     scrollView.borderType = NSBezelBorder;
 
@@ -548,11 +566,11 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     scrollView.documentView = self.tableView;
     [content addSubview:scrollView];
 
-    NSBox* panel = [[NSBox alloc] initWithFrame:NSMakeRect(360, 90, 380, 240)];
+    NSBox* panel = [[NSBox alloc] initWithFrame:NSMakeRect(360, 132, 400, 240)];
     panel.title = @"切换提示";
     [content addSubview:panel];
 
-    self.detailLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(378, 118, 344, 190)];
+    self.detailLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(378, 162, 364, 190)];
     self.detailLabel.bezeled = NO;
     self.detailLabel.drawsBackground = NO;
     self.detailLabel.editable = NO;
@@ -562,13 +580,29 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     self.detailLabel.stringValue = @"选择左侧账号后，这里会显示切换提示。";
     [content addSubview:self.detailLabel];
 
-    self.statusLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 62, 720, 18)];
+    self.loginICloudButton = [[NSButton alloc] initWithFrame:NSMakeRect(378, 108, 174, 34)];
+    self.loginICloudButton.title = @"登录到 iCloud";
+    self.loginICloudButton.bezelStyle = NSBezelStyleRounded;
+    self.loginICloudButton.target = self;
+    self.loginICloudButton.action = @selector(loginToICloud:);
+    self.loginICloudButton.enabled = NO;
+    [content addSubview:self.loginICloudButton];
+
+    self.loginAppStoreButton = [[NSButton alloc] initWithFrame:NSMakeRect(568, 108, 174, 34)];
+    self.loginAppStoreButton.title = @"登录到 App Store";
+    self.loginAppStoreButton.bezelStyle = NSBezelStyleRounded;
+    self.loginAppStoreButton.target = self;
+    self.loginAppStoreButton.action = @selector(loginToAppStore:);
+    self.loginAppStoreButton.enabled = NO;
+    [content addSubview:self.loginAppStoreButton];
+
+    self.statusLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 92, 740, 18)];
     self.statusLabel.bezeled = NO;
     self.statusLabel.drawsBackground = NO;
     self.statusLabel.editable = NO;
     self.statusLabel.selectable = NO;
     self.statusLabel.textColor = NSColor.secondaryLabelColor;
-    self.statusLabel.stringValue = @"自动粘贴功能需要在“系统设置 -> 隐私与安全性 -> 辅助功能”中授权。";
+    self.statusLabel.stringValue = @"选择账号后，可直接打开 iCloud 或 App Store，再辅助填充账号和密码。";
     [content addSubview:self.statusLabel];
 
     NSArray<NSDictionary*>* buttons = @[
@@ -624,6 +658,8 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     [self loadAccounts];
     [self.tableView reloadData];
     self.detailLabel.stringValue = @"操作完成，选择左侧账号查看切换提示。";
+    self.loginICloudButton.enabled = NO;
+    self.loginAppStoreButton.enabled = NO;
 }
 
 - (void)addAccount:(id)sender {
@@ -768,6 +804,21 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     return YES;
 }
 
+- (BOOL)prepareForAccountAssistedLogin:(NSString*)targetName {
+    auto selected = [self selectedAccount];
+    if (!selected.has_value()) {
+        [MakeAlert(@"未选择账号", @"请先选择一个账号。", NSAlertStyleInformational) runModal];
+        return NO;
+    }
+
+    if (![self prepareForAutoPasteWithSensitive:NO]) {
+        return NO;
+    }
+
+    self.statusLabel.stringValue = [NSString stringWithFormat:@"即将打开%@，3 秒后自动填入 Apple ID。随后可继续自动输入密码。", targetName];
+    return YES;
+}
+
 - (void)autoPasteAppleId:(id)sender {
     auto selected = [self selectedAccount];
     if (!selected.has_value()) {
@@ -802,6 +853,46 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 
     TypeAfterDelay(ToNSString(*password), 3.0);
     [MakeAlert(@"准备自动填充", @"请在 3 秒内切换到目标密码输入框，随后会自动逐字输入密码。", NSAlertStyleInformational) runModal];
+}
+
+- (void)loginToICloud:(id)sender {
+    auto selected = [self selectedAccount];
+    if (!selected.has_value()) {
+        [MakeAlert(@"未选择账号", @"请先选择一个账号。", NSAlertStyleInformational) runModal];
+        return;
+    }
+
+    if (![self prepareForAccountAssistedLogin:@"iCloud 设置"]) {
+        return;
+    }
+
+    OpenICloudSettings();
+    PasteAfterDelay(ToNSString(selected->appleId), 3.0, false);
+    [MakeAlert(
+        @"iCloud 辅助登录",
+        @"已尝试打开 iCloud 设置。3 秒后会自动填入 Apple ID。若系统要求退出当前账号，请你手动确认；进入密码框后可再点“复制密码”或使用自动输入密码。",
+        NSAlertStyleInformational
+    ) runModal];
+}
+
+- (void)loginToAppStore:(id)sender {
+    auto selected = [self selectedAccount];
+    if (!selected.has_value()) {
+        [MakeAlert(@"未选择账号", @"请先选择一个账号。", NSAlertStyleInformational) runModal];
+        return;
+    }
+
+    if (![self prepareForAccountAssistedLogin:@"App Store"]) {
+        return;
+    }
+
+    OpenAppStoreSettings();
+    PasteAfterDelay(ToNSString(selected->appleId), 3.0, false);
+    [MakeAlert(
+        @"App Store 辅助登录",
+        @"已尝试打开 App Store。3 秒后会自动填入 Apple ID。若当前已有账号，退出和确认步骤仍需你手动完成；进入密码框后可再点“复制密码”或使用自动输入密码。",
+        NSAlertStyleInformational
+    ) runModal];
 }
 
 - (void)showGuide:(id)sender {
@@ -844,11 +935,15 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
     auto selected = [self selectedAccount];
     if (!selected.has_value()) {
         self.detailLabel.stringValue = @"选择左侧账号后，这里会显示切换提示。";
+        self.loginICloudButton.enabled = NO;
+        self.loginAppStoreButton.enabled = NO;
         return;
     }
 
     const auto password = ReadPassword(selected->alias);
     self.detailLabel.stringValue = BuildGuideText(*selected, password);
+    self.loginICloudButton.enabled = YES;
+    self.loginAppStoreButton.enabled = YES;
 }
 
 @end
@@ -856,7 +951,7 @@ static NSString* BuildGuideText(const AccountRecord& account, const std::optiona
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
         NSApplication* app = [NSApplication sharedApplication];
-        NSString* iconPath = [NSBundle.mainBundle pathForResource:@"AppIcon" ofType:@"png"];
+        NSString* iconPath = [NSBundle.mainBundle pathForResource:@"AppIcon" ofType:@"icns"];
         if (iconPath != nil) {
             NSImage* icon = [[NSImage alloc] initWithContentsOfFile:iconPath];
             if (icon != nil) {

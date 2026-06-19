@@ -15,10 +15,12 @@ It does not bypass Apple's protected sign-in flow. Instead, it focuses on a safe
 - Native `AppKit` GUI
 - Multiple Apple account profiles
 - Passwords stored with `Security.framework`
+- One-click open for `iCloud` settings
+- One-click open for `App Store`
 - One-click copy for `Apple ID`
 - One-click copy for password
 - Auto-paste `Apple ID` after a short delay
-- Auto-paste password after a short delay
+- Auto-type password after a short delay
 - Clipboard auto-clear for passwords after `60` seconds
 
 ## Security
@@ -32,11 +34,12 @@ It does not bypass Apple's protected sign-in flow. Instead, it focuses on a safe
 
 ## Auto-Paste
 
-`IOSCheck` can auto-fill the currently focused macOS input field by:
+`IOSCheck` can assist the Apple account login flow on macOS by:
 
-1. copying `Apple ID` to the clipboard, then sending `Cmd+V`
-2. simulating password typing through macOS accessibility automation
-3. giving you a short delay to switch focus first
+1. opening `iCloud` settings or `App Store`
+2. auto-filling `Apple ID` after a short delay
+3. simulating password typing through macOS accessibility automation
+4. leaving the final sign-out/sign-in confirmations to you
 
 Requirements:
 
@@ -49,6 +52,7 @@ This is useful for desktop login forms or macOS app windows.
 
 - It cannot directly switch `iCloud` on `iPhone` or `iPad`
 - It cannot directly complete protected Apple sign-in flows on iOS
+- It cannot automatically detect and sign out the current `iCloud` or `App Store` account
 - It cannot force typing into fields that block accessibility-driven input
 
 If the target is Apple's protected system UI on mobile devices, third-party apps do not have the required control surface.
