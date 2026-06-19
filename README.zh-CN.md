@@ -90,10 +90,11 @@ build/IOSCheck.app
 可用方式：
 
 1. 打开 `.dmg`
-2. 直接双击 `Install and Open IOSCheck.command`
+2. 直接双击 `Install IOSCheck.app`
 
 它会自动：
 
+- 打开 `Terminal`
 - 复制 `IOSCheck.app` 到 `Applications`
 - 移除隔离标记
 - 直接打开应用

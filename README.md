@@ -86,10 +86,11 @@ If macOS shows "damaged" or "cannot verify developer" after downloading from Git
 Workaround:
 
 1. Open the `.dmg`
-2. Double-click `Install and Open IOSCheck.command`
+2. Double-click `Install IOSCheck.app`
 
 That script will automatically:
 
+- open `Terminal`
 - copy `IOSCheck.app` into `Applications`
 - remove the quarantine flag
 - open the app
