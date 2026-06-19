@@ -7,7 +7,7 @@ APP_PATH="$BUILD_DIR/IOSCheck.app"
 DIST_DIR="$ROOT_DIR/dist"
 DMG_PATH="$DIST_DIR/IOSCheck-macOS.dmg"
 STAGING_DIR="$DIST_DIR/dmg-staging"
-HELPER_SCRIPT="$ROOT_DIR/Open IOSCheck.command"
+HELPER_SCRIPT="$ROOT_DIR/Install and Open IOSCheck.command"
 CMAKE_BIN="/Applications/CLion.app/Contents/bin/cmake/mac/aarch64/bin/cmake"
 
 if [[ ! -x "$CMAKE_BIN" ]]; then
@@ -30,7 +30,7 @@ mkdir -p "$STAGING_DIR"
 
 cp -R "$APP_PATH" "$STAGING_DIR/"
 cp "$HELPER_SCRIPT" "$STAGING_DIR/"
-chmod +x "$STAGING_DIR/Open IOSCheck.command"
+chmod +x "$STAGING_DIR/Install and Open IOSCheck.command"
 ln -s /Applications "$STAGING_DIR/Applications"
 
 hdiutil create \

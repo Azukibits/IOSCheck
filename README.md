@@ -86,20 +86,19 @@ If macOS shows "damaged" or "cannot verify developer" after downloading from Git
 Workaround:
 
 1. Open the `.dmg`
-2. Drag `IOSCheck.app` into `Applications`
-3. Run this command in Terminal:
+2. Double-click `Install and Open IOSCheck.command`
+
+That script will automatically:
+
+- copy `IOSCheck.app` into `Applications`
+- remove the quarantine flag
+- open the app
+
+If you prefer the Terminal command directly, you can still use:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app
 ```
-
-If you have not copied the app into `Applications` yet, you can also install and launch directly from Terminal:
-
-```bash
-cp -R '/Volumes/IOSCheck/IOSCheck.app' /Applications/ && xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app
-```
-
-If the mounted volume name is not exactly `IOSCheck`, replace `/Volumes/IOSCheck/` with the actual mounted volume path, for example `/Volumes/IOSCheck 3/`.
 
 ## Tech Stack
 
