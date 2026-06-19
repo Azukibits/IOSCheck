@@ -1,0 +1,8 @@
+.DS_Store
+.idea/
+.ioscheck-data/
+build/
+cmake-build-debug/
+
+dist/
+!dist/IOSCheck-macOS.dmg
