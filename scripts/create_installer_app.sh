@@ -11,8 +11,11 @@ rm -rf "$APP_DIR"
 
 cat > "$APPLESCRIPT_PATH" <<'EOF'
 on run
-    set dmgPath to POSIX path of ((path to me as text) & "::")
-    set installCommand to "cp -R " & quoted form of (dmgPath & "IOSCheck.app") & " /Applications/ && xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app"
+    set installCommand to "SOURCE_APP=\"$(find /Volumes -maxdepth 2 -type d -path '/Volumes/IOSCheck*/IOSCheck.app' | tail -n 1)\"; " & ¬
+        "if [ -z \"$SOURCE_APP\" ]; then echo 'IOSCheck.app not found in mounted volume.'; exit 1; fi; " & ¬
+        "cp -R \"$SOURCE_APP\" /Applications/ && " & ¬
+        "xattr -dr com.apple.quarantine /Applications/IOSCheck.app && " & ¬
+        "open /Applications/IOSCheck.app"
     tell application "Terminal"
         activate
         do script installCommand
