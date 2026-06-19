@@ -87,9 +87,19 @@ build/IOSCheck.app
 
 1. 打开 `.dmg`
 2. 把 `IOSCheck.app` 拖到 `Applications`
-3. 双击 `Open IOSCheck.command`
+3. 在终端执行下面这条命令
 
-这个脚本会尝试移除隔离标记并启动应用。
+```bash
+xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app
+```
+
+如果你还没有把应用拖到 `Applications`，也可以直接在终端安装并启动：
+
+```bash
+cp -R '/Volumes/IOSCheck/IOSCheck.app' /Applications/ && xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app
+```
+
+如果挂载卷名不是 `IOSCheck`，把命令里的 `/Volumes/IOSCheck/` 改成你实际看到的卷名，例如 `/Volumes/IOSCheck 3/`。
 
 ## 技术栈
 

@@ -83,9 +83,19 @@ Workaround:
 
 1. Open the `.dmg`
 2. Drag `IOSCheck.app` into `Applications`
-3. Run `Open IOSCheck.command`
+3. Run this command in Terminal:
 
-That helper script attempts to remove the quarantine flag and launch the app.
+```bash
+xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app
+```
+
+If you have not copied the app into `Applications` yet, you can also install and launch directly from Terminal:
+
+```bash
+cp -R '/Volumes/IOSCheck/IOSCheck.app' /Applications/ && xattr -dr com.apple.quarantine /Applications/IOSCheck.app && open /Applications/IOSCheck.app
+```
+
+If the mounted volume name is not exactly `IOSCheck`, replace `/Volumes/IOSCheck/` with the actual mounted volume path, for example `/Volumes/IOSCheck 3/`.
 
 ## Tech Stack
 
